@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  BASE_COMMANDER
+  LOGISTICS_OFFICER
+}
+
+enum EquipmentType {
+  WEAPON
+  VEHICLE
+  AMMUNITION
+  OTHER
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+}
+
+enum AuditModule {
+  AUTH
+  USER
+  PURCHASE
+  TRANSFER
+  ASSIGNMENT
+  EXPENDITURE
+  INVENTORY
+  ASSET
+  BASE
+}
+
+model User {
+  id            String        @id @default(cuid())
+  name          String
+  email         String        @unique
+  passwordHash  String
+  role          Role
+  baseId        String?
+  base          Base?         @relation(fields: [baseId], references: [id], onDelete: SetNull)
+  purchases     Purchase[]
+  initiatedTransfers Transfer[] @relation("initiatedTransfers")
+  assignments   Assignment[]
+  expenditures  Expenditure[]
+  auditLogs     AuditLog[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Base {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  location    String
+  users       User[]
+  inventory   Inventory[]
+  purchases   Purchase[]
+  outgoingTransfers Transfer[] @relation("fromBase")
+  incomingTransfers Transfer[] @relation("toBase")
+  assignments Assignment[]
+  expenditures Expenditure[]
+  createdAt   DateTime    @default(now())
+}
+
+model Asset {
+  id          String        @id @default(cuid())
+  name        String
+  type        EquipmentType
+  unit        String
+  description String?
+  inventory   Inventory[]
+  purchases   Purchase[]
+  transfers   Transfer[]
+  assignments Assignment[]
+  expenditures Expenditure[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([type])
+}
+
+model Inventory {
+  id              String   @id @default(cuid())
+  assetId         String
+  baseId          String
+  openingBalance  Int      @default(0)
+  currentStock    Int      @default(0)
+  lastUpdated     DateTime @updatedAt
+  asset           Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  base            Base     @relation(fields: [baseId], references: [id], onDelete: Cascade)
+
+  @@unique([assetId, baseId])
+  @@index([baseId])
+}
+
+model Purchase {
+  id           String   @id @default(cuid())
+  assetId      String
+  baseId       String
+  quantity     Int
+  purchaseDate DateTime
+  supplier     String?
+  remarks      String?
+  addedById    String
+  createdAt    DateTime @default(now())
+  asset        Asset    @relation(fields: [assetId], references: [id])
+  base         Base     @relation(fields: [baseId], references: [id])
+  addedBy      User     @relation(fields: [addedById], references: [id])
+
+  @@index([purchaseDate])
+  @@index([baseId, assetId])
+}
+
+model Transfer {
+  id            String   @id @default(cuid())
+  assetId       String
+  fromBaseId    String
+  toBaseId      String
+  quantity      Int
+  transferDate  DateTime
+  remarks       String?
+  initiatedById String
+  createdAt     DateTime @default(now())
+  asset         Asset    @relation(fields: [assetId], references: [id])
+  fromBase      Base     @relation("fromBase", fields: [fromBaseId], references: [id])
+  toBase        Base     @relation("toBase", fields: [toBaseId], references: [id])
+  initiatedBy   User     @relation("initiatedTransfers", fields: [initiatedById], references: [id])
+
+  @@index([transferDate])
+  @@index([fromBaseId])
+  @@index([toBaseId])
+}
+
+model Assignment {
+  id             String   @id @default(cuid())
+  assetId        String
+  baseId         String
+  quantity       Int
+  assignedTo     String
+  assignedById   String
+  assignmentDate DateTime
+  remarks        String?
+  createdAt      DateTime @default(now())
+  asset          Asset    @relation(fields: [assetId], references: [id])
+  base           Base     @relation(fields: [baseId], references: [id])
+  assignedBy     User     @relation(fields: [assignedById], references: [id])
+
+  @@index([assignmentDate])
+  @@index([baseId])
+}
+
+model Expenditure {
+  id             String   @id @default(cuid())
+  assetId        String
+  baseId         String
+  quantity       Int
+  reason         String
+  expendedById   String
+  expenditureDate DateTime
+  remarks        String?
+  createdAt      DateTime @default(now())
+  asset          Asset    @relation(fields: [assetId], references: [id])
+  base           Base     @relation(fields: [baseId], references: [id])
+  expendedBy     User     @relation(fields: [expendedById], references: [id])
+
+  @@index([expenditureDate])
+  @@index([baseId])
+}
+
+model AuditLog {
+  id          String      @id @default(cuid())
+  userId      String?
+  action      AuditAction
+  module      AuditModule
+  referenceId String?
+  description String
+  oldData     Json?
+  newData     Json?
+  timestamp   DateTime    @default(now())
+  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([timestamp])
+  @@index([module])
+  @@index([userId])
+}

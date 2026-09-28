@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+@theme {
+    --color-forest: #18251d;
+    --color-olive: #304735;
+    --color-olive-2: #3f5740;
+    --color-coyote: #a68b68;
+    --color-sand: #d9c7a4;
+    --color-khaki: #c5b58a;
+    --color-paper: #f4f0e5;
+    --color-ink: #182019;
+}
+
+:root {
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    color: #182019;
+    background: #f4f0e5;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility
+}
+
+* {
+    box-sizing: border-box
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    background: #f4f0e5
+}
+
+.camouflage-grid {
+    background-image: linear-gradient(135deg, rgba(63, 87, 64, .08) 25%, transparent 25%), linear-gradient(315deg, rgba(166, 139, 104, .07) 25%, transparent 25%);
+    background-size: 38px 38px
+}
+
+
+/* SCROLL-BAR  */
+.scroll::-webkit-scrollbar {
+  width: 3px;
+}
+
+.no-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.scroll::-webkit-scrollbar-track {
+  background: transparent;
+  width: 20px;
+}
+
+.scroll::-webkit-scrollbar-track-piece {
+  background: transparent;
+  width: 20px;
+}
+
+.scroll::-webkit-scrollbar-thumb {
+  width: 4px;
+  border-radius: 4px;
+  background: #dedddd;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
