@@ -47,10 +47,9 @@ VITE_API_URL = http://localhost:5000/api
 
 ## Demo users
 
-Seeded password for all demo accounts: `ChangeMe@123`
+Seeded password for all demo accounts: `admin@123`
 
-- admin@military.local — Admin
-- commander@military.local — Base Commander
-- logistics@military.local — Logistics Officer
+- admin@gmail.com — Admin
+- commander@gmail.com — Base Commander
+- logistics@gmail.com — Logistics Officer
 
-Change these credentials before any real deployment.

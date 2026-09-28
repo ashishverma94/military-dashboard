@@ -9,8 +9,8 @@ import { Eye, EyeOff } from "lucide-react";
 export function Login() {
   const { login } = useAuth();
   const nav = useNavigate();
-  const [email, setEmail] = useState("admin@military.local");
-  const [password, setPassword] = useState("ChangeMe@123");
+  const [email, setEmail] = useState("admin@gmail.com");
+  const [password, setPassword] = useState("admin123");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);

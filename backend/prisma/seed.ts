@@ -1,125 +1,106 @@
-import { PrismaClient, Role, EquipmentType } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await bcrypt.hash("ChangeMe@123", 12);
-  const [north, west, desert] = await Promise.all([
-    prisma.base.upsert({
-      where: { name: "North Command Base" },
-      update: {},
-      create: { name: "North Command Base", location: "Chandigarh" },
-    }),
-    prisma.base.upsert({
-      where: { name: "Western Logistics Base" },
-      update: {},
-      create: { name: "Western Logistics Base", location: "Jaisalmer" },
-    }),
-    prisma.base.upsert({
-      where: { name: "Desert Operations Base" },
-      update: {},
-      create: { name: "Desert Operations Base", location: "Jodhpur" },
-    }),
-  ]);
+  console.log("🌱 Seeding demo accounts...");
 
-  const assets = await Promise.all([
-    prisma.asset.upsert({
-      where: { id: "seed-rifle" },
-      update: {},
-      create: {
-        id: "seed-rifle",
-        name: "Service Rifle",
-        type: EquipmentType.WEAPON,
-        unit: "Piece",
-        description: "Standard service rifle inventory item",
-      },
-    }),
-    prisma.asset.upsert({
-      where: { id: "seed-truck" },
-      update: {},
-      create: {
-        id: "seed-truck",
-        name: "Utility Truck",
-        type: EquipmentType.VEHICLE,
-        unit: "Vehicle",
-        description: "General logistics vehicle",
-      },
-    }),
-    prisma.asset.upsert({
-      where: { id: "seed-ammo" },
-      update: {},
-      create: {
-        id: "seed-ammo",
-        name: "5.56mm Ammunition",
-        type: EquipmentType.AMMUNITION,
-        unit: "Box",
-        description: "Training and operational ammunition stock",
-      },
-    }),
-  ]);
+  const passwordHash = await bcrypt.hash("admin123", 10);
 
-  const users = await Promise.all([
-    prisma.user.upsert({
-      where: { email: "admin@military.local" },
-      update: { passwordHash, role: Role.ADMIN },
-      create: {
-        name: "System Administrator",
-        email: "admin@military.local",
-        passwordHash,
-        role: Role.ADMIN,
+  // Optional: remove existing demo accounts
+  await prisma.user.deleteMany({
+    where: {
+      email: {
+        in: [
+          "admin@gmail.com",
+          "commander@gmail.com",
+          "logistics@gmail.com",
+        ],
       },
-    }),
-    prisma.user.upsert({
-      where: { email: "commander@military.local" },
-      update: { passwordHash, role: Role.BASE_COMMANDER, baseId: north.id },
-      create: {
-        name: "North Base Commander",
-        email: "commander@military.local",
-        passwordHash,
-        role: Role.BASE_COMMANDER,
-        baseId: north.id,
-      },
-    }),
-    prisma.user.upsert({
-      where: { email: "logistics@military.local" },
-      update: { passwordHash, role: Role.LOGISTICS_OFFICER, baseId: west.id },
-      create: {
-        name: "Logistics Officer",
-        email: "logistics@military.local",
-        passwordHash,
-        role: Role.LOGISTICS_OFFICER,
-        baseId: west.id,
-      },
-    }),
-  ]);
+    },
+  });
 
-  for (const base of [north, west, desert]) {
-    for (const asset of assets) {
-      const opening =
-        base.id === north.id && asset.id === "seed-rifle"
-          ? 200
-          : base.id === west.id && asset.id === "seed-ammo"
-            ? 500
-            : 50;
-      await prisma.inventory.upsert({
-        where: { assetId_baseId: { assetId: asset.id, baseId: base.id } },
-        update: {},
-        create: {
-          assetId: asset.id,
-          baseId: base.id,
-          openingBalance: opening,
-          currentStock: opening,
-        },
-      });
-    }
+  // Get bases for commander/logistics accounts
+  const bases = await prisma.base.findMany({
+    orderBy: {
+      createdAt: "asc",
+    },
+    take: 2,
+  });
+
+  // Create a demo base if none exists
+  let base1 = bases[0];
+
+  if (!base1) {
+    base1 = await prisma.base.create({
+      data: {
+        name: "Alpha Base",
+        location: "Demo Location",
+      },
+    });
   }
 
-  console.log(
-    `Seeded ${users.length} users, ${assets.length} assets and ${3 * assets.length} inventory rows.`,
-  );
+  let base2 = bases[1];
+
+  if (!base2) {
+    base2 = await prisma.base.create({
+      data: {
+        name: "Bravo Base",
+        location: "Demo Location",
+      },
+    });
+  }
+
+  // Admin
+  await prisma.user.create({
+    data: {
+      name: "Demo Admin",
+      email: "admin@gmail.com",
+      passwordHash,
+      role: Role.ADMIN,
+    },
+  });
+
+  // Base Commander
+  await prisma.user.create({
+    data: {
+      name: "Demo Commander",
+      email: "commander@gmail.com",
+      passwordHash,
+      role: Role.BASE_COMMANDER,
+      baseId: base1.id,
+    },
+  });
+
+  // Logistics Officer
+  await prisma.user.create({
+    data: {
+      name: "Demo Logistics",
+      email: "logistics@gmail.com",
+      passwordHash,
+      role: Role.LOGISTICS_OFFICER,
+      baseId: base2.id,
+    },
+  });
+
+  console.log("✅ Demo accounts created successfully!");
+  console.log("");
+  console.log("Admin:");
+  console.log("  admin@gmail.com / admin123");
+  console.log("");
+  console.log("Base Commander:");
+  console.log("  commander@gmail.com / admin123");
+  console.log("");
+  console.log("Logistics Officer:");
+  console.log("  logistics@gmail.com / admin123");
 }
 
 main()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect());
+  .catch((error) => {
+    console.error("❌ Seed failed:", error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
